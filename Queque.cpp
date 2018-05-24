@@ -54,7 +54,7 @@ void AQueque::vWhenStop()
 	//no need two Floor
 	if (diffPos == 0)
 	{
-
+		MissAndEnd();
 	}
 	else
 	{
@@ -93,6 +93,7 @@ void AQueque::vWhenStop()
 		DelFloor->SetActorScale3D(scale);
 
 		GameFloors.Add(DropFloor);
+		StartFalling();
 		//falling 0.5s, disable input
 	}
 
@@ -122,3 +123,39 @@ AFloor* AQueque::CreateFloor(TSubclassOf<class AFloor> FloorToSpawn, FVector Spa
 	}
 	return nullptr;
 }
+
+
+
+void AQueque::StartFalling(float FallDistance)
+{
+	FallingStartTime = GetWorld()->GetTimeSeconds();
+	// Tiles fall at a fixed rate of 120 FPS.
+	GetWorldTimerManager().SetTimer(TickFallingHandle, this, &AQueque::TickFalling, 0.001f, true);
+	TotalFallingTime = 0.75f;
+
+	for(floor : GameFloors)
+		floor->StartFalling(FloorHeight);
+	
+}
+
+void AQueque::TickFalling()
+{
+	float FallCompleteFraction = (GetWorld()->GetTimeSeconds() - FallingStartTime) / TotalFallingTime;
+
+	for(floor : GameFloors)
+		floor->TickFalling(FallCompleteFraction);
+
+	if (FallCompleteFraction >= 1.0f)
+	{
+		FinishFalling();
+	}
+	
+}
+
+void AQueque::FinishFalling()
+{
+	GetWorldTimerManager().ClearTimer(TickFallingHandle);
+//	Grid->OnTileFinishedFalling(this, LandingGridAddress);
+
+}
+
