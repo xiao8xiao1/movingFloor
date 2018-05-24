@@ -27,8 +27,16 @@ public:
 
 	/** The size of a space on the grid. Does not include borders or spacing between tiles. */
 	UPROPERTY(EditAnywhere, Category = Tile)
-		FVector2D FloorSize;
+		float FloorHeight;
 
+	float TotalFallingTime;
+	FTimerHandle TickFallingHandle;
+	
+	void StartFalling(float FallDistance);
+
+	void TickFalling();
+
+	void FinishFalling();
 	/** Get the world location for a given grid address. */
 	UFUNCTION(BlueprintCallable, Category = Tile)
 		FVector GetLocationFromFloorNo(int32 FloorNo) const;
@@ -37,8 +45,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Tile)
 		AFloor* GetLastFloor() const		{
 		return GameFloors.Last();
-		}
+		};
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Special Game Events")
+	void MissAndEnd();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Special Game Events")
+	void StartFalling();
 
 protected:
 	// Called when the game starts or when spawned
