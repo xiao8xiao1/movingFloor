@@ -19,18 +19,7 @@ class MATCH3_API AFloor : public APaperSpriteActor
 	
 public:	
 		AFloor();
-
-	void StartFalling(float FallDistance);
-
-	void TickFalling();
-
-	void FinishFalling();
-
-protected:
-	float TotalFallingTime;
+private:
 	FVector FallingStartLocation;
-
-	float FallingStartTime;
 	FVector FallingEndLocation;
-	FTimerHandle TickFallingHandle;
 };
