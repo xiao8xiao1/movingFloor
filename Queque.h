@@ -28,11 +28,15 @@ public:
 	/** The size of a space on the grid. Does not include borders or spacing between tiles. */
 	UPROPERTY(EditAnywhere, Category = Tile)
 		float FloorHeight;
+	UPROPERTY(EditAnywhere, Category = Tile)
+		float TotalFallingTime;
 
-	float TotalFallingTime;
+	UPROPERTY(EditAnywhere, Category = Tile)
+		float DelTime;
+	float FallingStartTime;
 	FTimerHandle TickFallingHandle;
 	
-	void StartFalling(float FallDistance);
+	void StartFalling();
 
 	void TickFalling();
 
@@ -51,7 +55,10 @@ public:
 	void MissAndEnd();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Special Game Events")
-	void StartFalling();
+		void PauseMovingFloor();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Special Game Events")
+		void PlayMovingFloor();
 
 protected:
 	// Called when the game starts or when spawned
@@ -61,6 +68,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable, Category = Tile)
 	void vWhenStop();
 
 	AFloor* CreateFloor(TSubclassOf<class AFloor> FloorToSpawn, FVector SpawnLocation);

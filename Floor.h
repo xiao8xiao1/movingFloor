@@ -19,7 +19,14 @@ class MATCH3_API AFloor : public APaperSpriteActor
 	
 public:	
 		AFloor();
+	void SetStartFalling(float FallDistance);
+	void SetTickFalling(float FallCompleteFraction );
+	void StartFalling(float fallDistance, float delTime);
+	void TickFalling();
 private:
 	FVector FallingStartLocation;
 	FVector FallingEndLocation;
+	float DelTime;	
+	float FallingStartTime;
+	FTimerHandle TickFallingHandle;
 };

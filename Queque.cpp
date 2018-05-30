@@ -5,7 +5,7 @@
 
 
 // Sets default values
-AQueque::AQueque()
+AQueque::AQueque(): TotalFallingTime  (0.75f), DelTime(1), FloorHeight(25)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -15,7 +15,7 @@ AQueque::AQueque()
 FVector AQueque::GetLocationFromFloorNo(int32 FloorNo) const
 {
 	FVector OutLocation = GetActorLocation();
-	OutLocation.Z -= FloorSize.Y * FloorNo;
+	OutLocation.Z -= FloorHeight * FloorNo;
 
 	return OutLocation;
 }
@@ -24,7 +24,8 @@ FVector AQueque::GetLocationFromFloorNo(int32 FloorNo) const
 void AQueque::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))	
+		EnableInput(PC);
 }
 
 // Called every frame
@@ -40,7 +41,6 @@ void AQueque::vWhenStop()
 	AFloor* TopFloor = GameFloors.Top();
 	if (TopFloor == NULL || MovingFloor == NULL)
 		return;
-	MovingFloor->SetActorHiddenInGame(true);
 
 	float width = MovingFloor->GetActorScale3D().X;
 	float movFloorPosX = MovingFloor->GetActorLocation().X;
@@ -48,13 +48,19 @@ void AQueque::vWhenStop()
 	float diffPos = movFloorPosX - topFloorPosX;
 	//end game
 	if (FMath::Abs(diffPos) >= width) {
-		return;
+		MissAndEnd();
 	}
 	float leftPos, rightPos, dropPos, dropWidth, delPos, delWidth;
 	//no need two Floor
 	if (diffPos == 0)
 	{
-		MissAndEnd();
+		FVector location = MovingFloor->GetActorLocation();
+		FVector scale = MovingFloor->GetActorScale3D();		
+		AFloor* DropFloor = CreateFloor(FloorClass, location);
+		DropFloor->SetActorScale3D(scale);
+
+		GameFloors.Add(DropFloor);
+		StartFalling();
 	}
 	else
 	{
@@ -81,20 +87,20 @@ void AQueque::vWhenStop()
 		}
 		FVector location = MovingFloor->GetActorLocation();
 		location.X = dropPos;
-		AFloor* DropFloor = CreateFloor(FloorClass, location);
 		FVector scale = MovingFloor->GetActorScale3D();
 		scale.X = dropWidth;
+		AFloor* DropFloor = CreateFloor(FloorClass, location);
 		DropFloor->SetActorScale3D(scale);
+		MovingFloor->SetActorScale3D(scale);
+		GameFloors.Add(DropFloor);
+		StartFalling();
 
 		location = MovingFloor->GetActorLocation();
 		location.X = delPos;
 		AFloor* DelFloor = CreateFloor(FloorClass, location);
 		scale.X = delWidth;
 		DelFloor->SetActorScale3D(scale);
-
-		GameFloors.Add(DropFloor);
-		StartFalling();
-		//falling 0.5s, disable input
+		DelFloor->StartFalling(FloorHeight*(-5), DelTime);
 	}
 
 
@@ -126,24 +132,29 @@ AFloor* AQueque::CreateFloor(TSubclassOf<class AFloor> FloorToSpawn, FVector Spa
 
 
 
-void AQueque::StartFalling(float FallDistance)
+void AQueque::StartFalling()
 {
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))	
+		DisableInput(PC);
+
+	MovingFloor->SetActorHiddenInGame(true);
+	PauseMovingFloor();
 	FallingStartTime = GetWorld()->GetTimeSeconds();
 	// Tiles fall at a fixed rate of 120 FPS.
 	GetWorldTimerManager().SetTimer(TickFallingHandle, this, &AQueque::TickFalling, 0.001f, true);
-	TotalFallingTime = 0.75f;
 
-	for(floor : GameFloors)
-		floor->StartFalling(FloorHeight);
+	for(auto floor : GameFloors)
+		floor->SetStartFalling(FloorHeight*(-1));
 	
 }
 
 void AQueque::TickFalling()
 {
-	float FallCompleteFraction = (GetWorld()->GetTimeSeconds() - FallingStartTime) / TotalFallingTime;
+	float now = GetWorld()->GetTimeSeconds();
+	float FallCompleteFraction = (now - FallingStartTime) / TotalFallingTime;
 
-	for(floor : GameFloors)
-		floor->TickFalling(FallCompleteFraction);
+	for(auto floor : GameFloors)
+		floor->SetTickFalling(FallCompleteFraction);
 
 	if (FallCompleteFraction >= 1.0f)
 	{
@@ -154,8 +165,14 @@ void AQueque::TickFalling()
 
 void AQueque::FinishFalling()
 {
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))	
+		EnableInput(PC);
+
+	MovingFloor->SetActorHiddenInGame(false);
+	PlayMovingFloor();
 	GetWorldTimerManager().ClearTimer(TickFallingHandle);
 //	Grid->OnTileFinishedFalling(this, LandingGridAddress);
+
 
 }
 

@@ -15,17 +15,47 @@ AFloor::AFloor()
 	}
 }
 
-void AFloor::StartFalling(float FallDistance)
+void AFloor::SetStartFalling(float FallDistance)
 {
 	FallingStartLocation = GetActorLocation();
-	FallingEndLocation = FallingStartLocation + FallDistance;
+	FallingEndLocation = FallingStartLocation;
+	FallingEndLocation.Z += FallDistance;
 }
 
-void AFloor::TickFalling(float FallCompleteFraction )
+void AFloor::SetTickFalling(float FallCompleteFraction )
 {
 	if (FallCompleteFraction >= 1.0f)
 	{
 		SetActorLocation(FallingEndLocation);
+	}
+	else
+	{
+		FVector NewLocation = FMath::Lerp(FallingStartLocation, FallingEndLocation, FallCompleteFraction);
+		SetActorLocation(NewLocation);
+	}
+}
+
+
+void AFloor::StartFalling(float fallDistance, float delTime)
+{
+	FallingStartTime = GetWorld()->GetTimeSeconds();
+	// Tiles fall at a fixed rate of 120 FPS.
+	GetWorldTimerManager().SetTimer(TickFallingHandle, this, &AFloor::TickFalling, 0.001f, true);
+
+	DelTime = delTime;
+	FallingStartLocation = GetActorLocation();
+	FallingEndLocation = FallingStartLocation;
+	FallingEndLocation.Z += fallDistance;
+}
+
+void AFloor::TickFalling( )
+{
+	float FallCompleteFraction = (GetWorld()->GetTimeSeconds() - FallingStartTime) / DelTime;
+	
+	if (FallCompleteFraction >= 1.0f)
+	{
+		GetWorldTimerManager().ClearTimer(TickFallingHandle);	
+		Destroy();
 	}
 	else
 	{
